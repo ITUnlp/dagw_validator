@@ -28,7 +28,7 @@ def main():
     args = parser.parse_args()
     logging.info("STARTED")
     path = Path(args.input)
-
+    logging.info("Validating section" + path.name)
     results = []
     for t in tests:
         r = t(path)
