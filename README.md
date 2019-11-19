@@ -1,4 +1,4 @@
-# FT Corpus
+# DKGW Format validator
 
 A validator for the Danish GigaWord (DKGW) project format.
 
