@@ -42,7 +42,7 @@ def check_correct_prefix(p: Path) -> TestReport:
     t = TestReport(test_name="Content files prefix")
     for child in p.iterdir():
         if child.suffix == "":
-            if not child.name.startswith(namespace):
+            if not child.name.startswith(namespace) and child.name != "LICENSE":
                 t.passed = False
                 msg = "The name of file {} should start with the namespace {}".format(
                     child, namespace)
@@ -88,7 +88,7 @@ def check_all_files_in_metadata(p: Path) -> TestReport:
                 doc_id = current_meta[Meta.Field.DOC_ID]
                 expected_doc_ids.add(doc_id)
 
-        undeclared = actual_doc_ids - expected_doc_ids
+        undeclared = actual_doc_ids - expected_doc_ids - {"LICENSE"}
         nonexistent = expected_doc_ids - actual_doc_ids
         shared = actual_doc_ids.intersection(expected_doc_ids)
         t.passed += len(shared)
