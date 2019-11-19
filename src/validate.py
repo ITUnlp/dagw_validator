@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from typing import List
 
-from src.validators import tests, TestReport
+from validators import tests, TestReport
 
 
 class ParserWithUsage(argparse.ArgumentParser):
@@ -22,9 +22,8 @@ def main():
                         datefmt='%m/%d/%Y %H:%M:%S')
     parser = ParserWithUsage()
     parser.description = "Validates a specific section of DKGW"
-    parser.add_argument("--input",
-                        help="Path to directory containing the section",
-                        required=True)
+    parser.add_argument("input",
+                        help="Path to directory containing the section")
 
     args = parser.parse_args()
     logging.info("STARTED")
