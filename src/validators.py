@@ -99,6 +99,34 @@ def check_all_files_in_metadata(p: Path) -> TestReport:
     return t
 
 
+import re
+
+matcher_Z = re.compile("[A-Z]{3}")  # tz name
+matcher_z = re.compile("[+-]\d{4}")  # tz offset
+
+msg_year = "Year {} is higher than current year {} in meta date: {}"
+msg_missing_Z = "Missing timezone as string from meta date: {}"
+msg_missing_z = "Missing timezone as offset from meta date: {}"
+
+
+def check_datetime(s: str) -> TestReport:
+
+    # Time zone checks are done by regular expression since danish locale is
+    # inconsistent across OS'es (Linux vs macOS)
+
+    t = TestReport(test_name="")
+    if s is not None:
+        m = matcher_Z.search(s)
+        if m is None:
+            t.passed = False
+            t.fail_messages.append(msg_missing_Z.format(s))
+        m = matcher_z.search(s)
+        if m is None:
+            t.passed = False
+            t.fail_messages.append(msg_missing_z.format(s))
+    return t
+
+
 def check_metadata_fields(p: Path) -> TestReport:
     namespace = p.name
     t = TestReport(test_name="Fields in metadata")
@@ -115,6 +143,16 @@ def check_metadata_fields(p: Path) -> TestReport:
             illegal_fields = keys - Meta.ALL_FIELDS
             illegal_msg = "Metadata contains undocumented field {{}} for doc_id = {d}"
             t += check_set(illegal_fields, illegal_msg.format(d=doc_id))
+
+            # Check all dates for correct content
+            date_built = current_meta.get(Meta.Field.DATE_BUILT, None)
+            t += check_datetime(date_built)
+
+            date_collected = current_meta.get(Meta.Field.DATE_COLLECTED, None)
+            t += check_datetime(date_collected)
+
+            date_published = current_meta.get(Meta.Field.DATE_PUBLISHED, None)
+            t += check_datetime(date_published)
 
     return t
 
