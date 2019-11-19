@@ -81,22 +81,25 @@ def check_all_files_in_metadata(p: Path) -> TestReport:
         if child.suffix == "":
             actual_doc_ids.add(child.name)
     meta_file = p / (namespace + ".jsonl")
-    with meta_file.open("r") as in_meta:
-        for line in in_meta:
-            current_meta = json.loads(line)
-            doc_id = current_meta[Meta.Field.DOC_ID]
-            expected_doc_ids.add(doc_id)
+    if meta_file.exists():
+        with meta_file.open("r") as in_meta:
+            for line in in_meta:
+                current_meta = json.loads(line)
+                doc_id = current_meta[Meta.Field.DOC_ID]
+                expected_doc_ids.add(doc_id)
 
-    undeclared = actual_doc_ids - expected_doc_ids
-    nonexistent = expected_doc_ids - actual_doc_ids
-    shared = actual_doc_ids.intersection(expected_doc_ids)
-    t.passed += len(shared)
-    msg_undeclared = "File {} not declared in meta file"
-    msg_nonexistent = "File {} declared in meta file, but does not exist"
+        undeclared = actual_doc_ids - expected_doc_ids
+        nonexistent = expected_doc_ids - actual_doc_ids
+        shared = actual_doc_ids.intersection(expected_doc_ids)
+        t.passed += len(shared)
+        msg_undeclared = "File {} not declared in meta file"
+        msg_nonexistent = "File {} declared in meta file, but does not exist"
 
-    t += check_set(undeclared, msg_undeclared)
-    t += check_set(nonexistent, msg_nonexistent)
-
+        t += check_set(undeclared, msg_undeclared)
+        t += check_set(nonexistent, msg_nonexistent)
+    else:
+        t.passed = False
+        t.fail_messages.append("Could not find metadata file " + str(meta_file))
     return t
 
 
@@ -144,38 +147,41 @@ def check_metadata_fields(p: Path) -> TestReport:
     namespace = p.name
     t = TestReport(test_name="Fields in metadata")
     meta_file = p / (namespace + ".jsonl")
-    with meta_file.open("r") as in_meta:
-        for line in in_meta:
-            current_meta = json.loads(line)
-            doc_id = current_meta[Meta.Field.DOC_ID]
-            keys = set(current_meta.keys())
-            missing_required = Meta.REQUIRED_FIELDS - keys
-            required_msg = "Metadata missing field {{}} for doc_id = {d}"
-            t += check_set(missing_required, required_msg.format(d=doc_id))
+    if meta_file.exists():
+        with meta_file.open("r") as in_meta:
+            for line in in_meta:
+                current_meta = json.loads(line)
+                doc_id = current_meta[Meta.Field.DOC_ID]
+                keys = set(current_meta.keys())
+                missing_required = Meta.REQUIRED_FIELDS - keys
+                required_msg = "Metadata missing field {{}} for doc_id = {d}"
+                t += check_set(missing_required, required_msg.format(d=doc_id))
 
-            illegal_fields = keys - Meta.ALL_FIELDS
-            illegal_msg = "Metadata contains undocumented field {{}} for doc_id = {d}"
-            t += check_set(illegal_fields, illegal_msg.format(d=doc_id))
+                illegal_fields = keys - Meta.ALL_FIELDS
+                illegal_msg = "Metadata contains undocumented field {{}} for doc_id = {d}"
+                t += check_set(illegal_fields, illegal_msg.format(d=doc_id))
 
-            # Check year published
-            year_published = current_meta.get(Meta.Field.YEAR_PUBLISHED, None)
-            if year_published is not None:
-                year_published = int(year_published)
-                if year_published > current_year:
-                    t.passed = False
-                    t.fail_messages.append("{}: {} is in the future!".format(
-                        Meta.Field.YEAR_PUBLISHED, year_published))
+                # Check year published
+                year_published = current_meta.get(Meta.Field.YEAR_PUBLISHED, None)
+                if year_published is not None:
+                    year_published = int(year_published)
+                    if year_published > current_year:
+                        t.passed = False
+                        t.fail_messages.append("{}: {} is in the future!".format(
+                            Meta.Field.YEAR_PUBLISHED, year_published))
 
-            # Check all dates for correct content
-            date_built = current_meta.get(Meta.Field.DATE_BUILT, None)
-            t += check_datetime(date_built)
+                # Check all dates for correct content
+                date_built = current_meta.get(Meta.Field.DATE_BUILT, None)
+                t += check_datetime(date_built)
 
-            date_collected = current_meta.get(Meta.Field.DATE_COLLECTED, None)
-            t += check_datetime(date_collected)
+                date_collected = current_meta.get(Meta.Field.DATE_COLLECTED, None)
+                t += check_datetime(date_collected)
 
-            date_published = current_meta.get(Meta.Field.DATE_PUBLISHED, None)
-            t += check_datetime(date_published)
-
+                date_published = current_meta.get(Meta.Field.DATE_PUBLISHED, None)
+                t += check_datetime(date_published)
+    else:
+        t.passed = False
+        t.fail_messages.append("Could not find metadata file " + str(meta_file))
     return t
 
 
