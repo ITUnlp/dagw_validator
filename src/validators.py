@@ -112,7 +112,6 @@ msg_missing_Y = "Missing year in meta date: {}"
 
 
 def check_datetime(s: str) -> TestReport:
-
     # Time zone checks are done by regular expression since danish locale is
     # inconsistent across OS'es (Linux vs macOS)
 
