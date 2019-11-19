@@ -1,3 +1,4 @@
+import datetime
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -103,10 +104,11 @@ import re
 
 matcher_Z = re.compile("[A-Z]{3}")  # tz name
 matcher_z = re.compile("[+-]\d{4}")  # tz offset
-
+matcher_year = re.compile("\s([\d]{4})")  # find year
 msg_year = "Year {} is higher than current year {} in meta date: {}"
 msg_missing_Z = "Missing timezone as string from meta date: {}"
 msg_missing_z = "Missing timezone as offset from meta date: {}"
+msg_missing_Y = "Missing year in meta date: {}"
 
 
 def check_datetime(s: str) -> TestReport:
@@ -124,10 +126,22 @@ def check_datetime(s: str) -> TestReport:
         if m is None:
             t.passed = False
             t.fail_messages.append(msg_missing_z.format(s))
+        m = matcher_year.search(s)
+        if m is None:
+            t.passed = False
+            t.fail_messages.append(msg_missing_Y.format(s))
+        else:
+            current_year: int = int(datetime.datetime.now().strftime("%Y"))
+            year = m.group(1)
+            year = int(year)
+            if year > current_year:
+                t.passed = False
+                t.fail_messages.append(msg_year.format(year, current_year, s))
     return t
 
 
 def check_metadata_fields(p: Path) -> TestReport:
+    current_year: int = int(datetime.datetime.now().strftime("%Y"))
     namespace = p.name
     t = TestReport(test_name="Fields in metadata")
     meta_file = p / (namespace + ".jsonl")
@@ -143,6 +157,15 @@ def check_metadata_fields(p: Path) -> TestReport:
             illegal_fields = keys - Meta.ALL_FIELDS
             illegal_msg = "Metadata contains undocumented field {{}} for doc_id = {d}"
             t += check_set(illegal_fields, illegal_msg.format(d=doc_id))
+
+            # Check year published
+            year_published = current_meta.get(Meta.Field.YEAR_PUBLISHED, None)
+            if year_published is not None:
+                year_published = int(year_published)
+                if year_published > current_year:
+                    t.passed = False
+                    t.fail_messages.append("{}: {} is in the future!".format(
+                        Meta.Field.YEAR_PUBLISHED, year_published))
 
             # Check all dates for correct content
             date_built = current_meta.get(Meta.Field.DATE_BUILT, None)
