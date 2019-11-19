@@ -2,8 +2,9 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+from typing import List
 
-from src.validators import check_correct_prefix, tests
+from src.validators import tests, TestReport
 
 
 class ParserWithUsage(argparse.ArgumentParser):
@@ -27,23 +28,26 @@ def main():
 
     args = parser.parse_args()
     logging.info("STARTED")
-    path = Path(args.input)
+    path: Path = Path(args.input)
     logging.info("Validating section" + path.name)
-    results = []
-    for t in tests:
-        r = t(path)
-        results.append(r)
+    results: List[TestReport] = [func(path) for func in tests]
 
-    total_passed = sum([t.passed for t in results])
-    total_failed = sum([t.failed for t in results])
-    error_msg = []
+    tests_passed: List[TestReport] = [t for t in results if t.passed is True]
+    tests_failed: List[TestReport] = [t for t in results if t.passed is False]
+    total_tests: int = len(tests_failed) + len(tests_passed)
+    logging.info(
+        "Passed {} of {} tests: {}".format(len(tests_passed), total_tests,
+                                           [t.test_name for t in
+                                            tests_passed]))
+    logging.info(
+        "Failed {} of {} tests: {}".format(len(tests_failed), total_tests,
+                                           [t.test_name for t in
+                                            tests_failed]))
+
     for t in results:
-        error_msg += t.fail_messages
-    total_tests = total_failed + total_passed
-    logging.info("Tests passed: {} of {}".format(total_passed, total_tests))
-    logging.info("Tests failed: {} of {}".format(total_failed, total_tests))
-    for m in error_msg:
-        logging.error(m)
+        for m in t.fail_messages:
+            logging.error(m)
+
     logging.info("DONE")
 
 

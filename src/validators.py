@@ -4,17 +4,34 @@ from pathlib import Path
 from typing import List, Set
 
 
+class Meta:
+    class Field:
+        DOC_ID: str = "doc_id"
+        YEAR_PUBLISHED: str = "year_published"
+        DATE_BUILT: str = "date_built"
+        LOCATION_NAME: str = "location_name"
+        LOCATION_LATLONG: str = "location_latlong"
+        DATE_COLLECTED: str = "date_collected"
+        DATE_PUBLISHED: str = "date_published"
+        URI: str = "uri"
+
+    REQUIRED_FIELDS = {Field.DOC_ID}
+    OPTIONAL_FIELDS: Set[str] = {Field.YEAR_PUBLISHED, Field.DATE_BUILT,
+                                 Field.LOCATION_NAME, Field.LOCATION_LATLONG,
+                                 Field.DATE_COLLECTED}
+    PREFERRED_FIELDS: Set[str] = {Field.DATE_PUBLISHED, Field.URI}
+    ALL_FIELDS = REQUIRED_FIELDS.union(OPTIONAL_FIELDS).union(PREFERRED_FIELDS)
+
+
 @dataclass
 class TestReport:
     test_name: str
-    passed: int = 0
-    failed: int = 0
+    passed: bool = True
     fail_messages: List[str] = field(default_factory=list)
 
     def __iadd__(self, o):
-        self.passed += o.passed
-        self.failed += o.failed
-        if o.failed > 0:
+        self.passed = self.passed and o.passed
+        if not o.passed and len(o.fail_messages) > 0:
             self.fail_messages += o.fail_messages
         return self
 
@@ -24,10 +41,8 @@ def check_correct_prefix(p: Path) -> TestReport:
     t = TestReport(test_name="Content files prefix")
     for child in p.iterdir():
         if child.suffix == "":
-            if child.name.startswith(namespace):
-                t.passed += 1
-            else:
-                t.failed += 1
+            if not child.name.startswith(namespace):
+                t.passed = False
                 msg = "The name of file {} should start with the namespace {}".format(
                     child, namespace)
                 t.fail_messages.append(msg)
@@ -40,19 +55,17 @@ def check_auxiliary_files(p: Path) -> TestReport:
     auxiliary_files = [namespace + ".jsonl", "LICENSE"]
     for a in auxiliary_files:
         meta_path = p / a
-        if meta_path.exists():
-            t.passed += 1
-        else:
-            t.failed += 1
+        if not meta_path.exists():
+            t.passed = False
             msg = "File {} does not exist".format(a)
             t.fail_messages.append(msg)
     return t
 
 
-def check_set(file_set, error_msg):
+def check_set(file_set, error_msg) -> TestReport:
     t = TestReport(test_name="")
     if len(file_set) > 0:
-        t.failed += len(file_set)
+        t.passed = False
         for f in file_set:
             t.fail_messages.append(error_msg.format(f))
     return t
@@ -60,7 +73,7 @@ def check_set(file_set, error_msg):
 
 def check_all_files_in_metadata(p: Path) -> TestReport:
     namespace = p.name
-    t = TestReport(test_name="Content files prefix")
+    t = TestReport(test_name="Test files manifest")
     actual_doc_ids: Set[str] = set()
     expected_doc_ids: Set[str] = set()
     for child in p.iterdir():
@@ -70,7 +83,7 @@ def check_all_files_in_metadata(p: Path) -> TestReport:
     with meta_file.open("r") as in_meta:
         for line in in_meta:
             current_meta = json.loads(line)
-            doc_id = current_meta["doc_id"]
+            doc_id = current_meta[Meta.Field.DOC_ID]
             expected_doc_ids.add(doc_id)
 
     undeclared = actual_doc_ids - expected_doc_ids
@@ -90,21 +103,16 @@ def check_metadata_fields(p: Path) -> TestReport:
     namespace = p.name
     t = TestReport(test_name="Fields in metadata")
     meta_file = p / (namespace + ".jsonl")
-    required_fields = {"doc_id"}
-    optional_fields = {"year_published", "date_built", "location_name",
-                       "location_latlong", "date_collected"}
-    preferred_fields = {"date_published", "uri"}
-    all_fields = required_fields.union(optional_fields).union(preferred_fields)
     with meta_file.open("r") as in_meta:
         for line in in_meta:
             current_meta = json.loads(line)
-            doc_id = current_meta["doc_id"]
+            doc_id = current_meta[Meta.Field.DOC_ID]
             keys = set(current_meta.keys())
-            missing_required = required_fields - keys
+            missing_required = Meta.REQUIRED_FIELDS - keys
             required_msg = "Metadata missing field {{}} for doc_id = {d}"
             t += check_set(missing_required, required_msg.format(d=doc_id))
 
-            illegal_fields = keys - all_fields
+            illegal_fields = keys - Meta.ALL_FIELDS
             illegal_msg = "Metadata contains undocumented field {{}} for doc_id = {d}"
             t += check_set(illegal_fields, illegal_msg.format(d=doc_id))
 
