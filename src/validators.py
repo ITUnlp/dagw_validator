@@ -120,10 +120,6 @@ def check_datetime(s: str) -> TestReport:
 
     t = TestReport(test_name="")
     if s is not None:
-        m = matcher_Z.search(s)
-        if m is None:
-            t.passed = False
-            t.fail_messages.append(msg_missing_Z.format(s))
         m = matcher_z.search(s)
         if m is None:
             t.passed = False
