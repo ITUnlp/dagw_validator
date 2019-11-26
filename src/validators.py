@@ -42,7 +42,8 @@ def check_correct_prefix(p: Path) -> TestReport:
     t = TestReport(test_name="Content files prefix")
     for child in p.iterdir():
         if child.suffix == "":
-            if not child.name.startswith(namespace) and child.name != "LICENSE":
+            if not child.name.startswith(
+                    namespace) and child.name != "LICENSE":
                 t.passed = False
                 msg = "The name of file {} should start with the namespace {}".format(
                     child, namespace)
@@ -99,7 +100,8 @@ def check_all_files_in_metadata(p: Path) -> TestReport:
         t += check_set(nonexistent, msg_nonexistent)
     else:
         t.passed = False
-        t.fail_messages.append("Could not find metadata file " + str(meta_file))
+        t.fail_messages.append(
+            "Could not find metadata file " + str(meta_file))
     return t
 
 
@@ -158,26 +160,31 @@ def check_metadata_fields(p: Path) -> TestReport:
                 t += check_set(illegal_fields, illegal_msg.format(d=doc_id))
 
                 # Check year published
-                year_published = current_meta.get(Meta.Field.YEAR_PUBLISHED, None)
+                year_published = current_meta.get(Meta.Field.YEAR_PUBLISHED,
+                                                  None)
                 if year_published is not None:
                     year_published = int(year_published)
                     if year_published > current_year:
                         t.passed = False
-                        t.fail_messages.append("{}: {} is in the future!".format(
-                            Meta.Field.YEAR_PUBLISHED, year_published))
+                        t.fail_messages.append(
+                            "{}: {} is in the future!".format(
+                                Meta.Field.YEAR_PUBLISHED, year_published))
 
                 # Check all dates for correct content
                 date_built = current_meta.get(Meta.Field.DATE_BUILT, None)
                 t += check_datetime(date_built)
 
-                date_collected = current_meta.get(Meta.Field.DATE_COLLECTED, None)
+                date_collected = current_meta.get(Meta.Field.DATE_COLLECTED,
+                                                  None)
                 t += check_datetime(date_collected)
 
-                date_published = current_meta.get(Meta.Field.DATE_PUBLISHED, None)
+                date_published = current_meta.get(Meta.Field.DATE_PUBLISHED,
+                                                  None)
                 t += check_datetime(date_published)
     else:
         t.passed = False
-        t.fail_messages.append("Could not find metadata file " + str(meta_file))
+        t.fail_messages.append(
+            "Could not find metadata file " + str(meta_file))
     return t
 
 
