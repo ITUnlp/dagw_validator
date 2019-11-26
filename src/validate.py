@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from typing import List
 
-from validators import tests, TestReport
+from validators import tests, TestReport, check_utf8_encoding
 
 
 class ParserWithUsage(argparse.ArgumentParser):
@@ -24,11 +24,19 @@ def main():
     parser.description = "Validates a specific section of DKGW"
     parser.add_argument("input",
                         help="Path to directory containing the section")
+    parser.add_argument("--check_enc", action="store_true", default=False,
+                        help="Check that files are UTF-8 encoded (slow).")
 
     args = parser.parse_args()
     logging.info("STARTED")
     path: Path = Path(args.input)
+    check_enc = args.check_enc
     logging.info("Validating section " + path.name)
+    validators = tests
+    if not check_enc:
+        logging.info("Skipping encoding validation")
+        validators.remove(check_utf8_encoding)
+
     results: List[TestReport] = [func(path) for func in tests]
 
     tests_passed: List[TestReport] = [t for t in results if t.passed is True]
