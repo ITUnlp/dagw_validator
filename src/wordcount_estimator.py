@@ -39,10 +39,13 @@ def main():
             for file in section.glob("{}_*".format(namespace)):
                 ext = file.suffix
                 if len(ext) == 0:
-                    with file.open("r", encoding="utf8") as content_file:
-                        content = content_file.read()
-                        tokens = content.split(" ")
-                        section_word_count += len(tokens)
+                    try:
+                        with file.open("r", encoding="utf8") as content_file:
+                            content = content_file.read()
+                            tokens = content.split(" ")
+                            section_word_count += len(tokens)
+                    except UnicodeDecodeError as e:
+                        logging.error("File {} is not UTF-8 encoded".format(str(file)))
 
             word_count[namespace] = section_word_count
 
