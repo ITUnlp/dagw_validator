@@ -28,7 +28,7 @@ def main():
     args = parser.parse_args()
     logging.info("STARTED")
     path: Path = Path(args.input)
-    logging.info("Validating section" + path.name)
+    logging.info("Validating section " + path.name)
     results: List[TestReport] = [func(path) for func in tests]
 
     tests_passed: List[TestReport] = [t for t in results if t.passed is True]
