@@ -181,5 +181,27 @@ def check_metadata_fields(p: Path) -> TestReport:
     return t
 
 
+def check_utf8_encoding(path: Path) -> TestReport:
+    t = TestReport(test_name="UTF-8 encoding")
+    from chardet.universaldetector import UniversalDetector
+    err_msg = "File {} is not UTF-8 encoded, but {} (confidence: {:.2f})"
+    accepted_encs = {"ascii", "utf-8"}
+    detector = UniversalDetector()
+    for file in path.iterdir():
+        detector.reset()
+        for line in file.open("rb"):
+            detector.feed(line)
+            if detector.done: break
+        detector.close()
+        actual_enc = detector.result["encoding"]
+        conf = detector.result["confidence"]
+        if actual_enc not in accepted_encs:
+            t.passed = False
+            name = file.name
+            t.fail_messages.append(err_msg.format(name, actual_enc, conf))
+    return t
+
+
 tests = [check_correct_prefix, check_auxiliary_files,
-         check_all_files_in_metadata, check_metadata_fields]
+         check_all_files_in_metadata, check_metadata_fields,
+         check_utf8_encoding]

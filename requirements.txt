@@ -1,1 +1,1 @@
-# No requirements for now
+chardet # For validating file encoding
