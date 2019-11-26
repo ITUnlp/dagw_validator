@@ -194,15 +194,17 @@ def check_utf8_encoding(path: Path) -> TestReport:
     err_msg = "File {} is not UTF-8 encoded, but {} (confidence: {:.2f})"
     accepted_encs = {"ascii", "utf-8"}
     detector = UniversalDetector()
+    max_lines = 50
     for file in path.iterdir():
         detector.reset()
-        for line in file.open("rb"):
+        for idx, line in enumerate(file.open("rb")):
             detector.feed(line)
-            if detector.done: break
+            if detector.done or idx > max_lines:
+                break
         detector.close()
         actual_enc = detector.result["encoding"]
-        conf = detector.result["confidence"]
         if actual_enc not in accepted_encs:
+            conf = detector.result["confidence"]
             t.passed = False
             name = file.name
             t.fail_messages.append(err_msg.format(name, actual_enc, conf))
