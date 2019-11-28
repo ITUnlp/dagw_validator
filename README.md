@@ -1,6 +1,6 @@
-# DKGW Format validator
+# DAGW Format validator
 
-A validator for the Danish GigaWord (DKGW) project format.
+A validator for the Danish GigaWord (DAGW) project format.
 
 ## Requirements
 Python 3.7 or higher.
@@ -22,7 +22,7 @@ which will return
 ```
 usage: validate.py [-h] input
 
-Validates a specific section of DKGW
+Validates a specific section of DAGW
 
 positional arguments:
   input       Path to directory containing the section
